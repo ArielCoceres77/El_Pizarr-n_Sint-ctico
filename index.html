@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El Pizarrón Sintáctico · DIA – Didáctica con IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --tiza:#f5f1e6;
+  --pizarron:#1d3a2f;
+  --pizarron-osc:#142a22;
+  --papel:#fdfaf1;
+  --linea-papel:#e8e0c9;
+  --tinta:#2b2a26;
+  --rojo:#c3272b;       /* sujeto */
+  --azul:#1d4e9e;       /* predicado */
+  --verde:#1d7a3f;      /* circunstanciales */
+  --dorado:#c9a227;     /* acentos DIA */
+  --naranja:#c96a1f;    /* nexos */
+  --violeta:#7a3fa0;    /* subordinadas */
+  --sombra:0 10px 30px rgba(20,42,34,.18);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Atkinson Hyperlegible',sans-serif;
+  background:
+    radial-gradient(ellipse at 20% -10%, #2a4d3e 0%, transparent 55%),
+    radial-gradient(ellipse at 90% 110%, #163026 0%, transparent 50%),
+    var(--pizarron);
+  color:var(--tinta);
+  min-height:100vh;
+  padding-bottom:70px;
+}
+/* ---------- Encabezado pizarrón ---------- */
+header{
+  color:var(--tiza);
+  text-align:center;
+  padding:44px 20px 26px;
+  position:relative;
+}
+header::after{
+  content:'';
+  position:absolute;left:50%;bottom:10px;transform:translateX(-50%);
+  width:min(520px,80%);height:3px;
+  background:repeating-linear-gradient(90deg,var(--dorado) 0 14px,transparent 14px 22px);
+  opacity:.85;
+}
+.marca{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.78rem;letter-spacing:.35em;text-transform:uppercase;
+  color:var(--dorado);margin-bottom:10px;
+}
+h1{
+  font-family:'Fraunces',serif;font-weight:900;
+  font-size:clamp(2rem,5vw,3.3rem);
+  letter-spacing:-.01em;
+  text-shadow:0 2px 0 rgba(0,0,0,.35);
+}
+h1 em{font-style:italic;color:var(--dorado)}
+.bajada{margin-top:10px;font-size:1rem;opacity:.85;max-width:640px;margin-inline:auto}
+
+/* ---------- Tabs ---------- */
+nav{
+  display:flex;justify-content:center;gap:8px;flex-wrap:wrap;
+  margin:26px auto 0;padding:0 16px;max-width:980px;
+}
+.tab{
+  font-family:'IBM Plex Mono',monospace;font-size:.85rem;font-weight:600;
+  padding:10px 20px;border-radius:12px 12px 0 0;cursor:pointer;
+  background:rgba(245,241,230,.12);color:var(--tiza);
+  border:1px solid rgba(245,241,230,.25);border-bottom:none;
+  transition:.2s;
+}
+.tab:hover{background:rgba(245,241,230,.22)}
+.tab.activa{background:var(--papel);color:var(--pizarron);border-color:var(--papel)}
+
+/* ---------- Hoja de papel ---------- */
+main{
+  max-width:980px;margin:0 auto;background:var(--papel);
+  border-radius:0 14px 14px 14px;box-shadow:var(--sombra);
+  padding:34px clamp(18px,4vw,46px) 46px;
+  background-image:repeating-linear-gradient(transparent 0 30px,var(--linea-papel) 30px 31px);
+  position:relative;
+}
+main::before{ /* margen rojo de cuaderno */
+  content:'';position:absolute;top:0;bottom:0;left:clamp(10px,3vw,34px);
+  width:2px;background:rgba(195,39,43,.35);
+}
+.panel{display:none;animation:aparecer .35s ease}
+.panel.activa{display:block}
+@keyframes aparecer{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+h2{font-family:'Fraunces',serif;font-weight:600;font-size:1.5rem;color:var(--pizarron);margin:26px 0 12px}
+h2:first-child{margin-top:0}
+p{line-height:1.65;margin-bottom:12px}
+.nota{
+  background:#fff8e2;border-left:4px solid var(--dorado);
+  padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:.95rem;
+}
+
+/* ---------- Analizador ---------- */
+.entrada{
+  display:flex;flex-direction:column;gap:12px;margin-top:6px;
+}
+textarea{
+  font-family:'Fraunces',serif;font-size:1.25rem;
+  padding:16px 18px;border:2px solid var(--pizarron);border-radius:12px;
+  background:#fff;resize:vertical;min-height:74px;color:var(--tinta);
+}
+textarea:focus{outline:3px solid var(--dorado)}
+.fila-botones{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button.principal{
+  font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:1rem;
+  background:var(--pizarron);color:var(--tiza);border:none;cursor:pointer;
+  padding:13px 30px;border-radius:12px;letter-spacing:.05em;
+  box-shadow:0 4px 0 var(--pizarron-osc);transition:.15s;
+}
+button.principal:hover{transform:translateY(-2px);box-shadow:0 6px 0 var(--pizarron-osc)}
+button.principal:active{transform:translateY(2px);box-shadow:0 1px 0 var(--pizarron-osc)}
+button.principal:disabled{opacity:.55;cursor:wait;transform:none}
+.ejemplos{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.chip{
+  font-size:.85rem;padding:7px 14px;border-radius:999px;cursor:pointer;
+  background:#fff;border:1.5px dashed var(--pizarron);color:var(--pizarron);
+  transition:.15s;
+}
+.chip:hover{background:var(--pizarron);color:var(--tiza)}
+
+.cargando{
+  display:none;align-items:center;gap:12px;margin-top:22px;
+  font-family:'IBM Plex Mono',monospace;color:var(--pizarron);
+}
+.cargando.visible{display:flex}
+.tiza-anim{
+  width:26px;height:26px;border-radius:50%;
+  border:3px solid var(--pizarron);border-top-color:var(--dorado);
+  animation:girar .8s linear infinite;
+}
+@keyframes girar{to{transform:rotate(360deg)}}
+.error{
+  display:none;margin-top:18px;background:#fdecec;border-left:4px solid var(--rojo);
+  padding:12px 16px;border-radius:0 10px 10px 0;color:#7a1e20;
+}
+
+/* ---------- Render del análisis ---------- */
+#resultado{margin-top:30px}
+.tarjeta{
+  background:#fff;border:1.5px solid var(--linea-papel);border-radius:14px;
+  padding:22px 22px 26px;margin-bottom:20px;box-shadow:0 4px 14px rgba(0,0,0,.05);
+}
+.clasificacion{
+  display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;
+}
+.etiqueta-tipo{
+  font-family:'IBM Plex Mono',monospace;font-size:.78rem;font-weight:600;
+  padding:5px 12px;border-radius:999px;letter-spacing:.03em;
+}
+.et-general{background:var(--pizarron);color:var(--tiza)}
+.et-sub{background:#fff3d6;color:#7a5c00;border:1px solid var(--dorado)}
+.et-bim{background:#eaf3ff;color:var(--azul);border:1px solid var(--azul)}
+
+.lienzo{
+  overflow-x:auto;padding:18px 6px 8px;
+}
+.oracion-fila{
+  display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;row-gap:34px;
+}
+.proposicion{
+  display:flex;flex-direction:column;gap:4px;
+}
+.prop-titulo{
+  font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:600;
+  color:var(--pizarron);opacity:.75;margin-bottom:2px;letter-spacing:.04em;
+}
+.prop-cuerpo{
+  display:flex;align-items:flex-start;gap:2px;
+  border-inline:2px solid var(--pizarron);
+  border-radius:6px;padding:0 8px;
+  position:relative;
+}
+.prop-cuerpo::before,.prop-cuerpo::after{
+  content:'';position:absolute;top:0;bottom:0;width:8px;
+}
+.grupo{
+  position:relative;display:flex;align-items:flex-start;
+  padding-top:30px;margin:0 3px;
+}
+.grupo::before{
+  content:'';position:absolute;top:16px;left:2px;right:2px;height:11px;
+  border-top:3px solid;border-left:3px solid;border-right:3px solid;
+  border-radius:10px 10px 0 0;
+}
+.grupo-label{
+  position:absolute;top:-6px;left:50%;transform:translateX(-50%);
+  font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:.82rem;
+  white-space:nowrap;background:var(--papel);padding:0 6px;border-radius:6px;
+}
+.g-sujeto::before{border-color:var(--rojo)}
+.g-sujeto .grupo-label{color:var(--rojo)}
+.g-predicado::before{border-color:var(--azul)}
+.g-predicado .grupo-label{color:var(--azul)}
+
+.seg{
+  display:inline-flex;flex-direction:column;align-items:center;
+  margin:0 5px;min-width:max-content;
+}
+.seg-palabra{
+  font-family:'Fraunces',serif;font-size:1.35rem;padding:2px 4px 5px;
+  color:var(--tinta);
+}
+.seg-sub .seg-palabra{font-size:1.15rem}
+.seg-linea{width:100%;height:3px;border-radius:2px;margin-bottom:4px}
+.seg-linea.doble{height:7px;border-top:3px solid;border-bottom:3px solid;background:transparent!important}
+.seg-funcion{
+  font-family:'IBM Plex Mono',monospace;font-size:.78rem;font-weight:600;
+  text-align:center;line-height:1.25;max-width:150px;
+}
+.f-rojo{color:var(--rojo)}.f-rojo .seg-linea{background:var(--rojo);border-color:var(--rojo)}
+.f-azul{color:var(--azul)}.f-azul .seg-linea{background:var(--azul);border-color:var(--azul)}
+.f-verde{color:var(--verde)}.f-verde .seg-linea{background:var(--verde);border-color:var(--verde)}
+.f-violeta{color:var(--violeta)}.f-violeta .seg-linea{background:var(--violeta);border-color:var(--violeta)}
+
+.nexo-bloque{
+  display:flex;flex-direction:column;align-items:center;align-self:center;
+  margin-top:26px;
+}
+.nexo-palabra{
+  font-family:'Fraunces',serif;font-size:1.35rem;font-weight:600;color:var(--naranja);
+  border:2px solid var(--naranja);border-radius:10px;padding:2px 12px;background:#fff6ee;
+}
+.nexo-tipo{
+  font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--naranja);
+  margin-top:5px;max-width:130px;text-align:center;line-height:1.3;
+}
+.punt-bloque .nexo-palabra{border-style:dashed}
+
+.os-caja{
+  border:2px dashed var(--violeta);border-radius:10px;padding:4px 8px 2px;
+  display:flex;align-items:flex-start;background:#faf5ff;
+}
+.explicacion{
+  margin-top:18px;background:#f4f8f4;border-left:4px solid var(--verde);
+  padding:12px 16px;border-radius:0 10px 10px 0;font-size:.97rem;line-height:1.6;
+}
+.tacito{
+  font-style:italic;opacity:.75;
+}
+
+/* ---------- Abreviaturas ---------- */
+table{width:100%;border-collapse:collapse;margin:12px 0 24px;background:#fff;border-radius:10px;overflow:hidden;font-size:.95rem}
+th,td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--linea-papel)}
+th{background:var(--pizarron);color:var(--tiza);font-family:'IBM Plex Mono',monospace;font-size:.8rem;letter-spacing:.05em}
+td code{font-family:'IBM Plex Mono',monospace;font-weight:600;background:#f0ecdf;padding:2px 7px;border-radius:6px}
+tr:last-child td{border-bottom:none}
+.col-roja td:first-child code{color:var(--rojo)}
+.col-azul td:first-child code{color:var(--azul)}
+.leyenda-colores{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0 20px}
+.muestra{display:flex;align-items:center;gap:7px;font-size:.88rem;font-family:'IBM Plex Mono',monospace}
+.muestra span{width:26px;height:8px;border-radius:4px;display:inline-block}
+
+footer{
+  text-align:center;color:var(--tiza);opacity:.75;margin-top:34px;
+  font-family:'IBM Plex Mono',monospace;font-size:.8rem;letter-spacing:.08em;
+}
+@media (max-width:640px){
+  .seg-palabra{font-size:1.1rem}
+  main{padding-top:24px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="marca">DIA · Didáctica con IA · Aprendé jugando</div>
+  <h1>El Pizarrón <em>Sintáctico</em></h1>
+  <p class="bajada">Escribí cualquier oración y la IA la analiza como en el pizarrón: sujeto en rojo, predicado en azul, con todas las abreviaturas del análisis escolar.</p>
+</header>
+
+<nav>
+  <div class="tab activa" data-panel="analizador">✏️ Analizador</div>
+  <div class="tab" data-panel="abreviaturas">🔤 Abreviaturas</div>
+  <div class="tab" data-panel="teoria">📖 Teoría</div>
+</nav>
+
+<main>
+
+<!-- ================= ANALIZADOR ================= -->
+<section class="panel activa" id="analizador">
+  <h2>Analizá una oración</h2>
+  <div class="entrada">
+    <textarea id="oracionInput" placeholder="Ej.: Dijo que vendría mañana.">Juan lee una novela.</textarea>
+    <div class="fila-botones">
+      <button class="principal" id="btnAnalizar" onclick="analizar()">ANALIZAR ▸</button>
+      <span style="font-size:.85rem;opacity:.7">o probá con un ejemplo:</span>
+    </div>
+    <div class="ejemplos" id="ejemplos"></div>
+  </div>
+
+  <div class="cargando" id="cargando">
+    <div class="tiza-anim"></div>
+    <span id="msgCarga">Analizando en el pizarrón…</span>
+  </div>
+  <div class="error" id="error"></div>
+  <div id="resultado"></div>
+</section>
+
+<!-- ================= ABREVIATURAS ================= -->
+<section class="panel" id="abreviaturas">
+  <h2>Código de colores</h2>
+  <div class="leyenda-colores">
+    <div class="muestra"><span style="background:var(--rojo)"></span> Sujeto</div>
+    <div class="muestra"><span style="background:var(--azul)"></span> Predicado</div>
+    <div class="muestra"><span style="background:var(--verde)"></span> Circunstanciales</div>
+    <div class="muestra"><span style="background:var(--naranja)"></span> Nexos / puntuación</div>
+    <div class="muestra"><span style="background:var(--violeta)"></span> Subordinadas (OS)</div>
+  </div>
+
+  <h2>Nivel oración</h2>
+  <table>
+    <tr><th>Abrev.</th><th>Significado</th></tr>
+    <tr><td><code>O.B.</code></td><td>Oración bimembre (tiene sujeto y predicado)</td></tr>
+    <tr><td><code>O.U.</code></td><td>Oración unimembre (no se divide en sujeto y predicado)</td></tr>
+  </table>
+
+  <h2 style="color:var(--rojo)">El sujeto</h2>
+  <table class="col-roja">
+    <tr><th>Abrev.</th><th>Significado</th></tr>
+    <tr><td><code>SES</code></td><td>Sujeto expreso simple (un solo núcleo)</td></tr>
+    <tr><td><code>SEC</code></td><td>Sujeto expreso compuesto (dos o más núcleos)</td></tr>
+    <tr><td><code>ST</code></td><td>Sujeto tácito (se indica el pronombre: ST: <em>tú/vos</em>)</td></tr>
+    <tr><td><code>N</code></td><td>Núcleo del sujeto (sustantivo o pronombre)</td></tr>
+    <tr><td><code>MD</code></td><td>Modificador directo (artículos y adjetivos)</td></tr>
+    <tr><td><code>MI</code></td><td>Modificador indirecto (encabezado por preposición)</td></tr>
+    <tr><td><code>Apos.</code></td><td>Aposición (construcción que aclara al núcleo, entre comas)</td></tr>
+    <tr><td><code>C.Comp.</code></td><td>Construcción comparativa (encabezada por «como»)</td></tr>
+  </table>
+
+  <h2 style="color:var(--azul)">El predicado</h2>
+  <table class="col-azul">
+    <tr><th>Abrev.</th><th>Significado</th></tr>
+    <tr><td><code>PVS</code></td><td>Predicado verbal simple (un solo verbo conjugado)</td></tr>
+    <tr><td><code>PVC</code></td><td>Predicado verbal compuesto (dos o más verbos)</td></tr>
+    <tr><td><code>N</code></td><td>Núcleo del predicado (el verbo)</td></tr>
+    <tr><td><code>OD</code></td><td>Objeto directo (se reemplaza por <em>lo/la/los/las</em>)</td></tr>
+    <tr><td><code>OI</code></td><td>Objeto indirecto (se reemplaza por <em>le/les</em>)</td></tr>
+    <tr><td><code>cc</code></td><td>Complemento circunstancial: de modo, tiempo, lugar, causa, fin, cantidad, compañía, instrumento…</td></tr>
+    <tr><td><code>PO</code></td><td>Predicativo obligatorio (con verbos copulativos: ser, estar, parecer)</td></tr>
+    <tr><td><code>CA</code></td><td>Complemento agente (en voz pasiva, encabezado por «por»)</td></tr>
+  </table>
+
+  <h2 style="color:var(--violeta)">Oraciones compuestas y complejas</h2>
+  <table>
+    <tr><th>Abrev.</th><th>Significado</th></tr>
+    <tr><td><code>P1, P2…</code></td><td>Proposiciones (cada miembro con verbo propio)</td></tr>
+    <tr><td><code>nexo</code></td><td>Palabra que une proposiciones (coordinante o subordinante)</td></tr>
+    <tr><td><code>OS</code></td><td>Oración subordinada (sustantiva, adjetiva o adverbial)</td></tr>
+    <tr><td><code>OP</code></td><td>Oración principal</td></tr>
+    <tr><td><code>CT</code></td><td>Circunstancial de tiempo (también se anota cc de tiempo)</td></tr>
+  </table>
+</section>
+
+<!-- ================= TEORÍA ================= -->
+<section class="panel" id="teoria">
+  <h2>1 · Oraciones simples, compuestas y complejas</h2>
+  <p>La distinción principal radica en el <strong>número de predicados</strong> (verbos conjugados) y en la <strong>relación jerárquica</strong> entre ellos.</p>
+  <table>
+    <tr><th>Tipo</th><th>Característica</th><th>Ejemplo</th></tr>
+    <tr><td><strong>Simple</strong></td><td>Un solo predicado (un verbo conjugado o una perífrasis). Expresa un único juicio.</td><td>«Juan lee una novela».</td></tr>
+    <tr><td><strong>Compuesta</strong></td><td>Dos o más predicados unidos por coordinación o yuxtaposición. Las partes conservan <strong>independencia sintáctica</strong>.</td><td>«Juan lee y Pedro escribe».</td></tr>
+    <tr><td><strong>Compleja</strong></td><td>Una oración principal y al menos una subordinada que <strong>depende</strong> de ella. Hay jerarquía.</td><td>«Te lo diré cuando vengas».</td></tr>
+  </table>
+  <div class="nota">💡 <strong>Truco del aula:</strong> contá los verbos conjugados. Un verbo → simple. Dos o más verbos «en pie de igualdad» → compuesta. Un verbo que «manda» y otro que «obedece» → compleja.</div>
+
+  <h2>2 · Yuxtapuestas, coordinadas y subordinadas</h2>
+  <table>
+    <tr><th>Tipo</th><th>¿Cómo se unen?</th><th>Autonomía</th><th>Ejemplo</th></tr>
+    <tr><td><strong>Yuxtapuestas</strong></td><td>Sin nexos: solo signos de puntuación ( , ; : )</td><td>Sí: cada parte podría ser oración plena</td><td>«Llegué, vi, vencí».</td></tr>
+    <tr><td><strong>Coordinadas</strong></td><td>Nexos coordinantes (y, pero, o…)</td><td>Sí: mismo nivel jerárquico</td><td>«Juan fue al mercado y Helena se marchó a trabajar».</td></tr>
+    <tr><td><strong>Subordinadas</strong></td><td>Nexos subordinantes (que, cuando, porque…)</td><td>No: cumplen una función dentro de la principal (sujeto, OD, cc…)</td><td>«Dijo que vendría pronto».</td></tr>
+  </table>
+
+  <h2>3 · Nexos de unión</h2>
+  <table>
+    <tr><th>Tipo</th><th>Categoría</th><th>Nexos principales</th></tr>
+    <tr><td rowspan="3"><strong>Yuxtapuestas</strong><br><small>(solo puntuación, relación lógica implícita)</small></td><td>Coma <code>,</code></td><td>adición o sucesión de acciones</td></tr>
+    <tr><td>Punto y coma <code>;</code></td><td>causa-consecuencia o contraposición</td></tr>
+    <tr><td>Dos puntos <code>:</code></td><td>introduce explicación, causa o resultado</td></tr>
+    <tr><td rowspan="6"><strong>Coordinadas</strong></td><td>Copulativos <small>(suma)</small></td><td>y, e (ante i-/hi-), ni (proposiciones negativas)</td></tr>
+    <tr><td>Disyuntivos <small>(alternancia)</small></td><td>o, u (ante o-/ho-), o bien</td></tr>
+    <tr><td>Adversativos <small>(oposición)</small></td><td>pero, mas, sino (que), sin embargo, no obstante, aunque (= «pero»), antes bien, en cambio, por el contrario</td></tr>
+    <tr><td>Distributivos <small>(alternancia distribuida)</small></td><td>ya… ya, bien… bien, unos… otros, ora… ora, sea… sea, tan pronto… como, esto… aquello, aquí… allí</td></tr>
+    <tr><td>Explicativos <small>(aclaración)</small></td><td>es decir, esto es, o sea</td></tr>
+    <tr><td>Ilativos o consecutivos <small>(consecuencia)</small></td><td>así que, luego, conque, por lo tanto, en consecuencia, así pues, por consiguiente, de modo que, de manera que</td></tr>
+    <tr><td rowspan="3"><strong>Subordinadas</strong></td><td>Sustantivas</td><td>que, si, qué, quién, cómo</td></tr>
+    <tr><td>Relativas (adjetivas)</td><td>que, cual, quien, cuyo, donde, como</td></tr>
+    <tr><td>Adverbiales</td><td>porque, para que, aunque, si, cuando</td></tr>
+  </table>
+
+  <div class="nota">⚠️ <strong>Caso combinado:</strong> muchas veces la puntuación y el nexo coordinante aparecen <em>juntos</em>: «Llegué tarde<strong>, pero</strong> nadie lo notó» o «No estudió<strong>; sin embargo,</strong> aprobó». En el análisis se marcan <strong>los dos elementos por separado</strong>: la coma o el punto y coma con su valor yuxtapositivo, y el nexo con su clase coordinante. El analizador de esta app lo hace automáticamente.</div>
+
+  <h2>4 · Cómo se analiza cada tipo</h2>
+  <p><strong>Yuxtapuestas:</strong> se separan las proposiciones marcadas por la puntuación y se analiza cada una por dentro. La relación lógica (causa, consecuencia, sucesión) queda implícita.</p>
+  <p><strong>Coordinadas:</strong> se identifica el nexo, se encierra cada proposición entre corchetes y se clasifica la coordinación (copulativa, adversativa, disyuntiva…). Cada proposición se analiza con sujeto y predicado propios.</p>
+  <p><strong>Subordinadas:</strong> se identifica la oración principal y se determina qué <strong>función sintáctica</strong> cumple la subordinada dentro de ella: si equivale a un sustantivo (sujeto, OD, término), es <em>sustantiva</em>; si modifica a un sustantivo, es <em>adjetiva</em>; si funciona como circunstancial, es <em>adverbial</em>.</p>
+  <div class="nota">📌 <strong>Prueba de sustitución:</strong> si podés reemplazar la subordinada por «eso», es sustantiva («Dijo <em>eso</em>»). Si podés reemplazarla por un adjetivo, es adjetiva («La casa <em>grande</em>»). Si responde a ¿cuándo? ¿dónde? ¿por qué?, es adverbial.</div>
+  <p style="margin-top:18px">Probá estos mismos ejemplos en la pestaña <strong>Analizador</strong> y compará el resultado con la teoría. 😉</p>
+</section>
+
+</main>
+
+<footer>ISFD y T «República Federal de Alemania» · El Colorado, Formosa · DIA 2026</footer>
+
+<script>
+/* ---------------- Tabs ---------------- */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('activa'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('activa'));
+    t.classList.add('activa');
+    document.getElementById(t.dataset.panel).classList.add('activa');
+  });
+});
+
+/* ---------------- Ejemplos ---------------- */
+const EJEMPLOS=[
+  "Juan lee una novela.",
+  "¿Vienes conmigo o te quedas?",
+  "Dijo que vendría mañana.",
+  "Llegué, vi, vencí.",
+  "La ropa no se seca más; hay mucha humedad.",
+  "La casa donde vive Juan es muy grande.",
+  "El perro de mi vecino, un caniche blanco, ladra toda la noche.",
+  "La carta fue escrita por el poeta.",
+  "Llegué tarde, pero nadie lo notó.",
+  "No estudió; sin embargo, aprobó el examen.",
+  "Llovió toda la noche; por lo tanto, se suspendió el acto."
+];
+const contEj=document.getElementById('ejemplos');
+EJEMPLOS.forEach(e=>{
+  const c=document.createElement('div');
+  c.className='chip';c.textContent=e;
+  c.onclick=()=>{document.getElementById('oracionInput').value=e;analizar();};
+  contEj.appendChild(c);
+});
+
+/* ---------------- Llamada a la IA ---------------- */
+const SYSTEM_PROMPT=`Sos un profesor argentino de Lengua experto en análisis sintáctico escolar (modelo estructuralista usado en escuelas argentinas). Analizás oraciones usando EXACTAMENTE estas abreviaturas:
+
+NIVEL ORACIÓN: O.B. (bimembre), O.U. (unimembre).
+SUJETO (rojo): SES (sujeto expreso simple), SEC (sujeto expreso compuesto), ST (sujeto tácito, indicando el pronombre, ej. "ST: vos"). Internos: N (núcleo), MD (modificador directo), MI (modificador indirecto), Apos. (aposición), C.Comp. (construcción comparativa).
+PREDICADO (azul): PVS (predicado verbal simple), PVC (compuesto). Internos: N (núcleo verbal), OD (objeto directo), OI (objeto indirecto), cc (complemento circunstancial, indicando subtipo: "cc de tiempo", "cc de lugar", "cc de modo", "cc de compañía", etc.), PO (predicativo obligatorio), CA (complemento agente).
+COMPUESTAS/COMPLEJAS: proposiciones P1, P2...; nexos coordinantes o subordinantes; puntuación en yuxtapuestas; OS (oración subordinada) sustantiva/adjetiva/adverbial con la función que cumple (ej. "OS sustantiva – OD").
+
+CLASIFICACIÓN COMPLETA DE ELEMENTOS DE UNIÓN:
+1) YUXTAPOSICIÓN (solo signos de puntuación, sin nexo gramatical; la relación lógica queda implícita):
+   - coma (,): adición o sucesión de acciones.
+   - punto y coma (;): causa-consecuencia o contraposición.
+   - dos puntos (:): introduce explicación, causa o resultado de la proposición anterior.
+   En el campo "clase" del elemento puntuacion indicá la relación, ej. "yuxtaposición (causa-consecuencia)".
+2) NEXOS COORDINANTES (unen cláusulas del mismo nivel jerárquico):
+   - Copulativos (suma/adición): y, e, ni.
+   - Disyuntivos (exclusión/alternancia): o, u, o bien.
+   - Adversativos (oposición/contraste): pero, mas, sino (que), sin embargo, no obstante, aunque (cuando equivale a "pero"), antes bien, en cambio, por el contrario.
+   - Distributivos (alternancia distribuida): ya... ya, bien... bien, unos... otros, ora... ora, sea... sea, tan pronto... como, esto... aquello, aquí... allí.
+   - Explicativos (aclaración): es decir, esto es, o sea.
+   - Ilativos o consecutivos (consecuencia directa): así que, luego, conque, por lo tanto, en consecuencia, así pues, por consiguiente, de modo que, de manera que.
+
+Respondé SOLO con un objeto JSON válido, sin markdown, sin backticks, sin texto adicional. Esquema:
+{
+ "tipo_general": "simple" | "compuesta" | "compleja",
+ "subtipo": "string breve (ej. 'coordinada disyuntiva', 'yuxtapuesta', 'subordinada sustantiva')" | null,
+ "bimembre": true | false,
+ "explicacion": "explicación docente breve (2 a 4 oraciones, en español rioplatense, con voseo) de por qué se clasifica así y qué observar",
+ "elementos": [
+   // secuencia ordenada de la oración. Cada elemento es UNO de estos:
+   {"tipo":"proposicion",
+    "etiqueta":"P1" | "Oración principal" | etc,
+    "clase":"copulativa"|"disyuntiva"|"independiente"|null,
+    "sujeto_tipo":"SES"|"SEC"|"ST: vos"|null,   // null si unimembre o sin sujeto en esta proposición
+    "predicado_tipo":"PVS"|"PVC"|null,
+    "segmentos":[
+       {"texto":"Juan","grupo":"sujeto","funcion":"N"},
+       {"texto":"lee","grupo":"predicado","funcion":"N"},
+       {"texto":"una novela","grupo":"predicado","funcion":"OD"},
+       // Una subordinada dentro del predicado o sujeto se marca así:
+       {"texto":"que vendría mañana","grupo":"predicado","funcion":"OS sustantiva – OD","es_subordinada":true,
+        "sub_segmentos":[
+           {"texto":"que","funcion":"nexo"},
+           {"texto":"vendría","funcion":"N"},
+           {"texto":"mañana","funcion":"cc de tiempo"}
+        ]}
+    ]},
+   {"tipo":"nexo","texto":"o","clase":"coordinante disyuntivo"},
+   {"tipo":"puntuacion","texto":";","clase":"yuxtaposición"}
+ ]
+}
+
+Reglas:
+- El texto de todos los segmentos concatenados en orden debe reconstruir la oración completa (podés omitir signos de apertura/cierre como ¿?).
+- Si el sujeto es tácito, NO inventes un segmento con la palabra: indicalo solo en sujeto_tipo (ej. "ST: vos") y todos los segmentos van al predicado.
+- En oraciones compuestas, cada proposición va como elemento separado, con el nexo o la puntuación ENTRE ellas como elemento propio.
+- IMPORTANTE: si entre dos proposiciones aparecen JUNTOS un signo de puntuación y un nexo coordinante (ej. ", pero", "; sin embargo,", "; por lo tanto,", ": es decir,"), generá DOS elementos consecutivos y analizá ambos: primero {"tipo":"puntuacion",...} con su valor yuxtapositivo, y luego {"tipo":"nexo",...} con su clase coordinante. Nunca fusiones los dos en uno solo ni omitas la puntuación.
+- Los nexos correlativos distributivos (ya... ya, ora... ora) van cada uno como elemento nexo delante de su proposición, con clase "coordinante distributivo (correlativo)".
+- Las locuciones (sin embargo, por lo tanto, es decir, o bien...) se tratan como UN solo nexo, con todas sus palabras en "texto".
+- En complejas con subordinada incrustada, la subordinada va como UN segmento con es_subordinada:true y su análisis interno en sub_segmentos.
+- Usá terminología escolar argentina. cc siempre en minúscula con subtipo.`;
+
+let cargaTimer=null;
+const FRASES_CARGA=["Analizando en el pizarrón…","Marcando el sujeto en rojo…","Subrayando el predicado en azul…","Buscando los núcleos…","Revisando nexos y proposiciones…"];
+
+async function analizar(){
+  const oracion=document.getElementById('oracionInput').value.trim();
+  const err=document.getElementById('error');
+  const res=document.getElementById('resultado');
+  err.style.display='none';
+  if(!oracion){err.textContent='Escribí una oración primero.';err.style.display='block';return;}
+
+  const btn=document.getElementById('btnAnalizar');
+  const carga=document.getElementById('cargando');
+  btn.disabled=true;carga.classList.add('visible');res.innerHTML='';
+  let i=0;
+  cargaTimer=setInterval(()=>{i=(i+1)%FRASES_CARGA.length;document.getElementById('msgCarga').textContent=FRASES_CARGA[i];},1600);
+
+  try{
+    const r=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-6",
+        max_tokens:1000,
+        system:SYSTEM_PROMPT,
+        messages:[{role:"user",content:`Analizá sintácticamente esta oración: «${oracion}»`}]
+      })
+    });
+    const data=await r.json();
+    const texto=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n");
+    const limpio=texto.replace(/```json|```/g,"").trim();
+    const analisis=JSON.parse(limpio);
+    renderizar(oracion,analisis);
+  }catch(e){
+    console.error(e);
+    err.textContent='Ups, hubo un problema al analizar. Probá de nuevo o revisá la oración.';
+    err.style.display='block';
+  }finally{
+    btn.disabled=false;carga.classList.remove('visible');clearInterval(cargaTimer);
+    document.getElementById('msgCarga').textContent=FRASES_CARGA[0];
+  }
+}
+
+/* ---------------- Render ---------------- */
+function colorFuncion(f,grupo){
+  const fl=(f||'').toLowerCase();
+  if(fl.startsWith('cc')||fl.startsWith('ct'))return 'f-verde';
+  if(fl.startsWith('os'))return 'f-violeta';
+  return grupo==='sujeto'?'f-rojo':'f-azul';
+}
+function esc(s){const d=document.createElement('div');d.textContent=s??'';return d.innerHTML;}
+
+function segHTML(s,grupo){
+  const cls=colorFuncion(s.funcion,grupo);
+  if(s.es_subordinada){
+    const interior=(s.sub_segmentos||[]).map(ss=>{
+      if((ss.funcion||'').toLowerCase()==='nexo'){
+        return `<div class="seg seg-sub f-violeta"><span class="seg-palabra" style="color:var(--naranja);font-weight:600">${esc(ss.texto)}</span><div class="seg-linea" style="background:var(--naranja)"></div><div class="seg-funcion" style="color:var(--naranja)">nexo</div></div>`;
+      }
+      const c=colorFuncion(ss.funcion,'predicado');
+      return `<div class="seg seg-sub ${c}"><span class="seg-palabra">${esc(ss.texto)}</span><div class="seg-linea"></div><div class="seg-funcion">${esc(ss.funcion)}</div></div>`;
+    }).join('');
+    return `<div class="seg f-violeta">
+      <div class="os-caja">${interior}</div>
+      <div class="seg-linea doble" style="margin-top:4px"></div>
+      <div class="seg-funcion">${esc(s.funcion)}</div>
+    </div>`;
+  }
+  return `<div class="seg ${cls}">
+    <span class="seg-palabra">${esc(s.texto)}</span>
+    <div class="seg-linea"></div>
+    <div class="seg-funcion">${esc(s.funcion)}</div>
+  </div>`;
+}
+
+function propHTML(p){
+  const segs=p.segmentos||[];
+  // agrupar segmentos consecutivos por grupo
+  const grupos=[];
+  segs.forEach(s=>{
+    const g=s.grupo==='sujeto'?'sujeto':'predicado';
+    const ultimo=grupos[grupos.length-1];
+    if(ultimo&&ultimo.grupo===g)ultimo.items.push(s);
+    else grupos.push({grupo:g,items:[s]});
+  });
+  const cuerpo=grupos.map(g=>{
+    const label=g.grupo==='sujeto'
+      ?(p.sujeto_tipo||'S')
+      :(p.predicado_tipo||'P');
+    const clase=g.grupo==='sujeto'?'g-sujeto':'g-predicado';
+    return `<div class="grupo ${clase}">
+      <div class="grupo-label">${esc(label)}</div>
+      ${g.items.map(s=>segHTML(s,g.grupo)).join('')}
+    </div>`;
+  }).join('');
+  const tacito=(p.sujeto_tipo||'').startsWith('ST')&&!segs.some(s=>s.grupo==='sujeto')
+    ?`<div class="grupo g-sujeto" style="padding-top:30px"><div class="grupo-label">${esc(p.sujeto_tipo)}</div><div class="seg f-rojo"><span class="seg-palabra tacito">(${esc(p.sujeto_tipo.replace(/^ST:?\s*/i,'')||'él')})</span><div class="seg-linea" style="opacity:.4"></div><div class="seg-funcion" style="opacity:.6">tácito</div></div></div>`
+    :'';
+  return `<div class="proposicion">
+    <div class="prop-titulo">${esc(p.etiqueta||'Proposición')}${p.clase?` · ${esc(p.clase)}`:''}</div>
+    <div class="prop-cuerpo">${tacito}${cuerpo}</div>
+  </div>`;
+}
+
+function renderizar(oracion,a){
+  const res=document.getElementById('resultado');
+  const elems=(a.elementos||[]).map(el=>{
+    if(el.tipo==='proposicion')return propHTML(el);
+    if(el.tipo==='nexo')return `<div class="nexo-bloque"><span class="nexo-palabra">${esc(el.texto)}</span><div class="nexo-tipo">nexo ${esc(el.clase||'')}</div></div>`;
+    if(el.tipo==='puntuacion')return `<div class="nexo-bloque punt-bloque"><span class="nexo-palabra">${esc(el.texto)}</span><div class="nexo-tipo">${esc(el.clase||'puntuación')}</div></div>`;
+    return '';
+  }).join('');
+
+  res.innerHTML=`<div class="tarjeta">
+    <div class="clasificacion">
+      <span class="etiqueta-tipo et-general">Oración ${esc(a.tipo_general||'')}</span>
+      ${a.subtipo?`<span class="etiqueta-tipo et-sub">${esc(a.subtipo)}</span>`:''}
+      <span class="etiqueta-tipo et-bim">${a.bimembre?'O.B. (bimembre)':'O.U. (unimembre)'}</span>
+    </div>
+    <div class="lienzo"><div class="oracion-fila">${elems}</div></div>
+    ${a.explicacion?`<div class="explicacion">👨‍🏫 <strong>Explicación:</strong> ${esc(a.explicacion)}</div>`:''}
+  </div>`;
+  res.scrollIntoView({behavior:'smooth',block:'start'});
+}
+</script>
+</body>
+</html>
