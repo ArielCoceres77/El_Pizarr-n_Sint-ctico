@@ -524,7 +524,7 @@ async function analizar(){
   cargaTimer=setInterval(()=>{i=(i+1)%FRASES_CARGA.length;document.getElementById('msgCarga').textContent=FRASES_CARGA[i];},1600);
 
   try{
-    const r=await fetch("https://api.anthropic.com/v1/messages",{
+    const r=await fetch("https://TU-WORKER.workers.dev",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
